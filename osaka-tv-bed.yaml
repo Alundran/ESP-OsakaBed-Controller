@@ -1,0 +1,66 @@
+esphome:
+  name: osaka-tv-bed
+  friendly_name: osaka-tv-bed
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "<redacted>"
+
+ota:
+  password: "<redacted>"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+esp32_ble_tracker:
+
+ble_client:
+  - mac_address: "<osaka tv bed mac>"
+    id: my_ble_client
+
+cover:
+  - platform: template
+    name: "Osaka TV Bed"
+    id: "osaka_tv_bed"
+    has_position: false
+    assumed_state: false
+    open_action:
+      - ble_client.ble_write:
+          id: my_ble_client
+          service_uuid: 0000ae00-0000-1000-8000-00805f9b34fb
+          characteristic_uuid: 0000AE03-0000-1000-8000-00805f9b34fb
+          value: [0x55, 0xAA, 0xF5, 0x0A, 0xF3, 0x0C, 0xFE]  # TV Up command
+      - cover.template.publish:
+          id: osaka_tv_bed
+          current_operation: OPENING
+      - delay: 15s
+      - cover.template.publish:
+          id: osaka_tv_bed
+          state: OPEN
+          current_operation: IDLE
+    close_action:
+      - ble_client.ble_write:
+          id: my_ble_client
+          service_uuid: 0000ae00-0000-1000-8000-00805f9b34fb
+          characteristic_uuid: 0000AE03-0000-1000-8000-00805f9b34fb
+          value: [0x55, 0xAA, 0xF5, 0x0A, 0xF2, 0x0D, 0xFE]  # TV Down command
+      - delay: 0.1s
+      - cover.template.publish:
+          id: osaka_tv_bed
+          current_operation: CLOSING
+      - delay: 15s
+      - cover.template.publish:
+          id: osaka_tv_bed
+          state: CLOSED
+          current_operation: IDLE
+    
